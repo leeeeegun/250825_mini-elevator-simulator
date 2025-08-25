@@ -7,42 +7,36 @@ import static java.nio.file.Files.move;
 
 public class ElevatorService {
 
-    private final Elevator elevator;
+    private final Elevator elevator; // 상태를 변경할 대상인 Elevator 모델
 
     public ElevatorService(Elevator elevator) {
         this.elevator = elevator;
     }
 
-    // 엘베 시뮬레이션 진행의 핵심 로직
     public void step() throws InterruptedException {
+        // 1단계: 현재 층이 목적지인지 확인하고 도착 처리
+        processArrivalIfNeeded();
 
-        // 1. 현재 층이 목적지인지 확인하고 처리
-        if (elevator.getDestinations().contains(elevator.getCurrentFloor())) {
-            processArrival();
-        }
+        // 2단계: 다음 이동 방향을 최신 정보로 업데이트
+        updateDirection();
 
-        // 2. 다음 방향 결정
-        updateDirecion();
-
-        // 3. 결정된 방향으로 이동
+        // 3단계: 결정된 방향으로 엘리베이터 이동
         move();
     }
 
-    // 목적지 도착 시 처리 ( 문 열고 닫기, 목적지 제거 )
-    private void processArrival() throws InterruptedException {
-        elevator.opesDoors();
-        System.out.println(elevator.getCurrentFloor() + "층 도착! /n 문이 열립니다.");
-        Thread.sleep(2000);
+    private void processArrivalIfNeeded() throws InterruptedException {
+        if (elevator.getDestinations().contains(elevator.getCurrentFloor())) {
+            elevator.openDoors();
+            Thread.sleep(2000);
 
-        elevator.removeDestination(elevator.getCurrentFloor());
+            elevator.removeDestination(elevator.getCurrentFloor());
 
-        elevator.closeDoors();
-        System.out.println("문이 닫힙니다.");
-        Thread.sleep(1000);
+            elevator.closeDoors();
+            Thread.sleep(1000);
+        }
     }
 
-    // 엘베 다음 방향을 결정
-    private void updateDirecion() {
+    private void updateDirection() {
         if (elevator.getDestinations().isEmpty()) {
             elevator.setDirection(Direction.IDLE);
             return;
@@ -51,20 +45,27 @@ public class ElevatorService {
         Direction currentDirection = elevator.getDirection();
         int currentFloor = elevator.getCurrentFloor();
 
+        // 위로 가는 중인데 더 이상 올라갈 곳이 없으면 아래로 전환
         if (currentDirection == Direction.UP) {
-            Integer higherDest = elevator.getDestinations().higher(currentFloor);
-            if (higherDest == null) elevator.setDirection(Direction.DOWN);
+            if (elevator.getDestinations().higher(currentFloor) == null) {
+                elevator.setDirection(Direction.DOWN);
+            }
+            // 아래로 가는 중인데 더 이상 내려갈 곳이 없으면 위로 전환
         } else if (currentDirection == Direction.DOWN) {
-            Integer lowerDest = elevator.getDestinations().lower(currentFloor);
-            if (lowerDest == null) elevator.setDirection(Direction.UP);
-        } else { //IDLE
+            if (elevator.getDestinations().lower(currentFloor) == null) {
+                elevator.setDirection(Direction.UP);
+            }
+            // 멈춰있을 때, 목적지를 보고 방향 결정
+        } else { // IDLE
             int nextDest = elevator.getDestinations().first();
-            if (nextDest > currentFloor) elevator.setDirection(Direction.UP);
-            else if (nextDest < currentFloor) elevator.setDirection(Direction.DOWN);
+            if (nextDest > currentFloor) {
+                elevator.setDirection(Direction.UP);
+            } else if (nextDest < currentFloor) {
+                elevator.setDirection(Direction.DOWN);
+            }
         }
     }
-    
-    // 결정된 방향으로 엘베 이동시킴
+
     private void move() {
         if (elevator.getDirection() == Direction.UP) {
             elevator.moveUp();

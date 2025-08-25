@@ -43,7 +43,7 @@ public class Elevator {
         this.direction = direction;
     }
 
-    public void opesDoors() {
+    public void openDoors() {
         this.doorsOpen = true;
     }
 
@@ -64,7 +64,7 @@ public class Elevator {
         return direction;
     }
 
-    public boolean getDoorsOpen() {
+    public boolean isDoorsOpen() {
         return doorsOpen;
     }
 
